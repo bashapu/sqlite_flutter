@@ -2,43 +2,84 @@ import 'package:flutter/material.dart';
 import 'helper.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'SQLite Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: UserListScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
-
+class UserListScreen extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _UserListScreenState createState() => _UserListScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _UserListScreenState extends State<UserListScreen> {
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  List<Map<String, dynamic>> _users = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _databaseHelper.init().then((_) {
+      _loadUsers();
+    });
+  }
+
+  void _loadUsers() async {
+    final users = await _databaseHelper.queryAllRows();
+    setState(() {
+      _users = users;
+    });
+  }
+
+  void _addUser() async {
+    await _databaseHelper.insert({
+      'name': 'Bharath Ashapu',
+      'age': 30,
+    });
+    _loadUsers();
+  }
+
+  void _deleteUser(int id) async {
+    await _databaseHelper.delete(id);
+    _loadUsers();
+  }
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       appBar: AppBar(
-        
+        title: Text('SQLite Demo'),
       ),
-      body: Center(
-        
+      body: ListView.builder(
+        itemCount: _users.length,
+        itemBuilder: (context, index) {
+          final user = _users[index];
+          return ListTile(
+            title: Text(user['name']),
+            subtitle: Text('Age: ${user['age']}'),
+            trailing: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                _deleteUser(user['_id']);
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addUser,
+        child: Icon(Icons.add),
       ),
     );
   }
